@@ -1,11 +1,18 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"os"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
+
+type Location struct {
+	Latitude  float64
+	Longitude float64
+	Timestamp int
+}
 
 func main() {
 	if len(os.Args) < 2 {
@@ -29,6 +36,7 @@ func main() {
 
 		var msg *tgbotapi.Message
 		switch {
+
 		case update.Message != nil:
 			msg = update.Message
 		case update.EditedMessage != nil:
@@ -37,5 +45,31 @@ func main() {
 			continue
 		}
 
+		loc, err := getLocationFromMessage(msg)
+		if err != nil {
+			log.Print(err)
+			continue
+		}
+		log.Printf("%+v", loc)
+
 	}
+}
+
+func getLocationFromMessage(msg *tgbotapi.Message) (Location, error) {
+
+	if msg.Location == nil {
+		return Location{}, errors.New("Msg has no location")
+	}
+	loc := Location{
+		Latitude:  msg.Location.Latitude,
+		Longitude: msg.Location.Longitude,
+		Timestamp: msg.Date,
+	}
+
+	if msg.EditDate != 0 {
+		loc.Timestamp = msg.EditDate
+	}
+
+	return loc, nil
+
 }
