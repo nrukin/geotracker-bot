@@ -15,8 +15,6 @@ type Track struct {
 	gorm.Model
 	ID       string
 	Distance int
-	Start    int
-	End      int
 }
 
 type Location struct {
@@ -71,15 +69,7 @@ func main() {
 			continue
 		}
 
-		var t Track
-		tid := getTrackIDFromMessage(msg)
-
-		db.Where(Track{ID: tid}).Attrs(Track{Start: loc.Timestamp}).FirstOrCreate(&t)
-		loc.Track = t
-		t.End = loc.Timestamp
-
 		db.Create(&loc)
-		db.Save(&t)
 
 	}
 }
@@ -90,7 +80,10 @@ func getLocationFromMessage(msg *tgbotapi.Message) (Location, error) {
 		return Location{}, errors.New("Msg has no location")
 	}
 
+	t := getTrackIDFromMessage(msg)
+
 	loc := Location{
+		Track:     t,
 		Latitude:  msg.Location.Latitude,
 		Longitude: msg.Location.Longitude,
 		Timestamp: msg.Date,
@@ -104,7 +97,7 @@ func getLocationFromMessage(msg *tgbotapi.Message) (Location, error) {
 
 }
 
-func getTrackIDFromMessage(msg *tgbotapi.Message) string {
+func getTrackIDFromMessage(msg *tgbotapi.Message) Track {
 	tid := fmt.Sprintf("%d_%d", msg.Chat.ID, msg.MessageID)
-	return tid
+	return Track{ID: tid}
 }
