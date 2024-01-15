@@ -7,9 +7,12 @@ import (
 	"os"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 type Location struct {
+	gorm.Model
 	Track     string
 	Latitude  float64
 	Longitude float64
@@ -17,6 +20,11 @@ type Location struct {
 }
 
 func main() {
+	db, err := gorm.Open(sqlite.Open("track.db"), &gorm.Config{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	db.AutoMigrate(&Location{})
 	if len(os.Args) < 2 {
 		log.Fatal("token not set")
 	}
