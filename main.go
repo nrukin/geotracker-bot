@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
 
@@ -61,7 +62,11 @@ func getLocationFromMessage(msg *tgbotapi.Message) (Location, error) {
 	if msg.Location == nil {
 		return Location{}, errors.New("Msg has no location")
 	}
+
+	tid := getTrackFromMessage(msg)
+
 	loc := Location{
+		Track:     tid,
 		Latitude:  msg.Location.Latitude,
 		Longitude: msg.Location.Longitude,
 		Timestamp: msg.Date,
@@ -73,4 +78,10 @@ func getLocationFromMessage(msg *tgbotapi.Message) (Location, error) {
 
 	return loc, nil
 
+}
+
+// returns track identifier of getTrackFromMessage
+// concatenates chat-id and message id
+func getTrackFromMessage(msg *tgbotapi.Message) string {
+	return fmt.Sprintf("%d_%d", msg.Chat.ID, msg.MessageID)
 }
