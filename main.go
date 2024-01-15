@@ -11,9 +11,18 @@ import (
 	"gorm.io/gorm"
 )
 
+type Track struct {
+	gorm.Model
+	ID       string
+	Distance int
+	Start    int
+	End      int
+}
+
 type Location struct {
 	gorm.Model
-	Track     string
+	TrackID   string
+	Track     Track
 	Latitude  float64
 	Longitude float64
 	Timestamp int
@@ -25,6 +34,7 @@ func main() {
 		log.Fatal(err)
 	}
 	db.AutoMigrate(&Location{})
+	db.AutoMigrate(&Track{})
 	if len(os.Args) < 2 {
 		log.Fatal("token not set")
 	}
@@ -60,7 +70,16 @@ func main() {
 			log.Print(err)
 			continue
 		}
-		log.Printf("%+v", loc)
+
+		var t Track
+		tid := getTrackIDFromMessage(msg)
+
+		db.Where(Track{ID: tid}).Attrs(Track{Start: loc.Timestamp}).FirstOrCreate(&t)
+		loc.Track = t
+		t.End = loc.Timestamp
+
+		db.Create(&loc)
+		db.Save(&t)
 
 	}
 }
@@ -71,10 +90,7 @@ func getLocationFromMessage(msg *tgbotapi.Message) (Location, error) {
 		return Location{}, errors.New("Msg has no location")
 	}
 
-	tid := getTrackFromMessage(msg)
-
 	loc := Location{
-		Track:     tid,
 		Latitude:  msg.Location.Latitude,
 		Longitude: msg.Location.Longitude,
 		Timestamp: msg.Date,
@@ -88,8 +104,7 @@ func getLocationFromMessage(msg *tgbotapi.Message) (Location, error) {
 
 }
 
-// returns track identifier of getTrackFromMessage
-// concatenates chat-id and message id
-func getTrackFromMessage(msg *tgbotapi.Message) string {
-	return fmt.Sprintf("%d_%d", msg.Chat.ID, msg.MessageID)
+func getTrackIDFromMessage(msg *tgbotapi.Message) string {
+	tid := fmt.Sprintf("%d_%d", msg.Chat.ID, msg.MessageID)
+	return tid
 }
