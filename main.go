@@ -13,8 +13,7 @@ import (
 
 type Track struct {
 	gorm.Model
-	ID       string
-	Distance int
+	ID string
 }
 
 type Location struct {
