@@ -1,6 +1,10 @@
 package app
 
-import "log"
+import (
+	"log"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
 
 func (app *App) Start() {
 	u := tgbotapi.NewUpdate(0)
