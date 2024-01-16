@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/asmarques/geodist"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -26,7 +27,7 @@ type Location struct {
 }
 
 type TrackInfo struct {
-	Distance int
+	Distance float64
 	Duration int
 	Points   int
 }
@@ -117,17 +118,31 @@ func getTrackIDFromMessage(msg *tgbotapi.Message) Track {
 
 func getTrackInfo(t Track, db *gorm.DB) TrackInfo {
 
-	var dst, dur, pts int
+	var dst float64
+	var dur, pts int
 	var locs []Location
 
 	db.Where(&Location{Track: t}).Order("Timestamp").Find(&locs)
 
 	dur = locs[len(locs)-1].Timestamp - locs[0].Timestamp
 
-	for _, loc := range locs {
-		pts++
-		dst++
-		_ = loc
+	for i := 0; i < len(locs)-1; i++ {
+
+		cur_point := geodist.Point{
+			Lat:  locs[i].Latitude,
+			Long: locs[i].Longitude,
+		}
+		next_point := geodist.Point{
+			Lat:  locs[i+1].Latitude,
+			Long: locs[i+1].Longitude,
+		}
+
+		// in kilometers
+		dst += geodist.HaversineDistance(
+			cur_point,
+			next_point,
+		)
+
 	}
 
 	return TrackInfo{

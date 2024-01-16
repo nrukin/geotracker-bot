@@ -3,6 +3,7 @@ module github.com/nrukin/geotracker-bot
 go 1.21.6
 
 require (
+	github.com/asmarques/geodist v1.0.1
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	gorm.io/driver/sqlite v1.5.4
 	gorm.io/gorm v1.25.5
