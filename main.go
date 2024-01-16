@@ -32,6 +32,14 @@ type TrackInfo struct {
 	Points   int
 }
 
+type TrackInfoMessages struct {
+	gorm.Model
+	TrackID   string
+	Track     Track
+	ChatID    int
+	MessageID int
+}
+
 func main() {
 	db, err := gorm.Open(sqlite.Open("track.db"), &gorm.Config{})
 	if err != nil {
