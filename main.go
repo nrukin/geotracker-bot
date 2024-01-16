@@ -32,6 +32,15 @@ type TrackInfo struct {
 	Points   int
 }
 
+func (ti TrackInfo) MessageText() string {
+	return fmt.Sprintf(
+		"Distance: %f; Duration: %d; PointsCnt: %d",
+		ti.Distance,
+		ti.Duration,
+		ti.Points,
+	)
+}
+
 type TrackInfoMessage struct {
 	gorm.Model
 	TrackID   string `gorm:"primaryKey"`
@@ -165,21 +174,17 @@ func getTrackInfo(t Track, db *gorm.DB) TrackInfo {
 func SendTrackInfo(info TrackInfo, db *gorm.DB, msg *tgbotapi.Message, bot *tgbotapi.BotAPI, t Track) error {
 
 	var tim TrackInfoMessage
-	it := fmt.Sprintf("%+v", info)
+	mt := info.MessageText()
 
 	err := db.First(&tim, "track_id = ?", t.ID).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-
-			// create new message
-			draft := tgbotapi.NewMessage(msg.Chat.ID, it)
+			draft := tgbotapi.NewMessage(msg.Chat.ID, mt)
 			draft.ReplyToMessageID = msg.MessageID
-
 			smsg, err := bot.Send(draft)
 			if err != nil {
 				return err
 			}
-
 			tim.Track = t
 			tim.ChatID = smsg.Chat.ID
 			tim.MessageID = smsg.MessageID
@@ -192,7 +197,7 @@ func SendTrackInfo(info TrackInfo, db *gorm.DB, msg *tgbotapi.Message, bot *tgbo
 	draft := tgbotapi.NewEditMessageText(
 		tim.ChatID,
 		tim.MessageID,
-		it,
+		mt,
 	)
 	if _, err := bot.Send(draft); err != nil {
 		return err
