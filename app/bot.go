@@ -10,13 +10,13 @@ func (app *App) ProcessUpdate(upd tgbotapi.Update) error {
 
 	msg, new := getMessageFromUpdate(upd)
 	if msg != nil {
-		app.ProcessMessage(msg, new)
-		return nil
+		return app.ProcessMessage(msg, new)
 	}
 	cbdata := upd.CallbackData()
 	if cbdata != "" {
-		// TODO
+		return app.ProcessInlineButtonData(cbdata)
 	}
+	return nil
 }
 
 func getMessageFromUpdate(upd tgbotapi.Update) (*tgbotapi.Message, bool) {
@@ -49,14 +49,19 @@ func (app *App) ProcessMessage(msg *tgbotapi.Message, new bool) error {
 
 func (app *App) SendTrackInfo(info TrackInfo, msg *tgbotapi.Message, t Track) error {
 
+	repmkp, err := TrackInfoReplyMarkup(t)
+	if err != nil {
+		return err
+	}
+
 	var tim TrackInfoMessage
 	mt := info.MessageText()
-	err := app.db.First(&tim, "track_id = ?", t.ID).Error
+	err = app.db.First(&tim, "track_id = ?", t.ID).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			draft := tgbotapi.NewMessage(msg.Chat.ID, mt)
 			draft.ReplyToMessageID = msg.MessageID
-			draft.ReplyMarkup = TrackInfoReplyMarkup(t)
+			draft.ReplyMarkup = repmkp
 			smsg, err := app.bot.Send(draft)
 			if err != nil {
 				return err
@@ -75,7 +80,7 @@ func (app *App) SendTrackInfo(info TrackInfo, msg *tgbotapi.Message, t Track) er
 		mt,
 	)
 
-	draft.ReplyMarkup = TrackInfoReplyMarkup(t)
+	draft.ReplyMarkup = repmkp
 	if _, err := app.bot.Send(draft); err != nil {
 		return err
 	}

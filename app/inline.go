@@ -39,3 +39,26 @@ func NewInlineButtonDataDownloadTrack(t Track) (string, error) {
 	return string(res), nil
 
 }
+
+func (app *App) ProcessInlineButtonData(data string) error {
+
+	var d InlineButtonData
+	if err := json.Unmarshal([]byte(data), &d); err != nil {
+		return err
+	}
+
+	if d.Operation == "download" {
+
+		var t Track
+		if err := app.db.First(&t, d.Data).Error; err != nil {
+			return err
+		}
+		if _, err := app.bot.Send(
+			tgbotapi.NewMessage(t.ChatID, "Not implemented yet"),
+		); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

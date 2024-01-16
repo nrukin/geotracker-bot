@@ -1,6 +1,8 @@
 package app
 
 import (
+	"log"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"gorm.io/gorm"
 )
@@ -16,7 +18,10 @@ func (app *App) Start() {
 	updates := app.bot.GetUpdatesChan(u)
 
 	for upd := range updates {
-		app.ProcessUpdate(upd)
+		err := app.ProcessUpdate(upd)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 
 }
