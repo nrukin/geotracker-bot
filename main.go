@@ -25,6 +25,12 @@ type Location struct {
 	Timestamp int
 }
 
+type TrackInfo struct {
+	Distance int
+	Duration int
+	Points   int
+}
+
 func main() {
 	db, err := gorm.Open(sqlite.Open("track.db"), &gorm.Config{})
 	if err != nil {
@@ -70,6 +76,14 @@ func main() {
 
 		db.Create(&loc)
 
+		info := getTrackInfo(loc.Track, db)
+
+		rsp := tgbotapi.NewMessage(msg.Chat.ID, fmt.Sprintf("%+v", info))
+		rsp.ReplyToMessageID = msg.MessageID
+		if _, err := bot.Send(rsp); err != nil {
+			log.Print(err)
+		}
+
 	}
 }
 
@@ -99,4 +113,27 @@ func getLocationFromMessage(msg *tgbotapi.Message) (Location, error) {
 func getTrackIDFromMessage(msg *tgbotapi.Message) Track {
 	tid := fmt.Sprintf("%d_%d", msg.Chat.ID, msg.MessageID)
 	return Track{ID: tid}
+}
+
+func getTrackInfo(t Track, db *gorm.DB) TrackInfo {
+
+	var dst, dur, pts int
+	var locs []Location
+
+	db.Where(&Location{Track: t}).Order("Timestamp").Find(&locs)
+
+	dur = locs[len(locs)-1].Timestamp - locs[0].Timestamp
+
+	for _, loc := range locs {
+		pts++
+		dst++
+		_ = loc
+	}
+
+	return TrackInfo{
+		Distance: dst,
+		Duration: dur,
+		Points:   pts,
+	}
+
 }
