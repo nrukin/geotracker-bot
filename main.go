@@ -90,50 +90,7 @@ func main() {
 
 		info := getTrackInfo(loc.Track, db)
 
-		var tim TrackInfoMessage
-		if err := db.First(&tim, "track_id = ?", loc.Track.ID).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
-
-				rsp := tgbotapi.NewMessage(msg.Chat.ID, fmt.Sprintf("%+v", info))
-				rsp.ReplyToMessageID = msg.MessageID
-				zzz, err := bot.Send(rsp)
-
-				if err != nil {
-					log.Print(err)
-					continue
-				}
-
-				tim.Track = loc.Track
-				tim.ChatID = zzz.Chat.ID
-				tim.MessageID = zzz.MessageID
-
-				db.Create(&tim)
-
-			} else {
-				log.Print(err)
-				continue
-			}
-		} else {
-			em := tgbotapi.NewEditMessageText(
-				tim.ChatID,
-				tim.MessageID,
-				fmt.Sprintf("%+v", info),
-			)
-			_, err := bot.Send(em)
-			if err != nil {
-				log.Print(err)
-				continue
-			}
-		}
-
-		//
-
-		// rsp.ReplyToMessageID = msg.MessageID
-		// if _, err := bot.Send(rsp); err != nil {
-		// 	log.Print(err)
-		// }
-
-		// // tgbotapi.NewEditMessageText()
+		SendTrackInfo(info, db, msg, bot, loc.Track)
 
 	}
 }
@@ -172,7 +129,7 @@ func getTrackInfo(t Track, db *gorm.DB) TrackInfo {
 	var dur, pts int
 	var locs []Location
 
-	db.Where(&Location{Track: t}).Order("Timestamp").Find(&locs)
+	db.Where(&Location{TrackID: t.ID}).Order("Timestamp").Find(&locs)
 
 	dur = locs[len(locs)-1].Timestamp - locs[0].Timestamp
 
@@ -203,4 +160,42 @@ func getTrackInfo(t Track, db *gorm.DB) TrackInfo {
 		Points:   pts,
 	}
 
+}
+
+func SendTrackInfo(info TrackInfo, db *gorm.DB, msg *tgbotapi.Message, bot *tgbotapi.BotAPI, t Track) error {
+
+	var tim TrackInfoMessage
+	it := fmt.Sprintf("%+v", info)
+
+	err := db.First(&tim, "track_id = ?", t.ID).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+
+			// create new message
+			draft := tgbotapi.NewMessage(msg.Chat.ID, it)
+			draft.ReplyToMessageID = msg.MessageID
+
+			smsg, err := bot.Send(draft)
+			if err != nil {
+				return err
+			}
+
+			tim.Track = t
+			tim.ChatID = smsg.Chat.ID
+			tim.MessageID = smsg.MessageID
+			db.Create(&tim)
+		} else {
+			return err
+		}
+	}
+
+	draft := tgbotapi.NewEditMessageText(
+		tim.ChatID,
+		tim.MessageID,
+		it,
+	)
+	if _, err := bot.Send(draft); err != nil {
+		return err
+	}
+	return nil
 }
