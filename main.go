@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"os"
+
+	"github.com/nrukin/geotracker-bot/app"
 )
 
 func main() {
@@ -10,7 +12,7 @@ func main() {
 		log.Fatal("token not set")
 	}
 	token := os.Args[1]
-	a, err := NewApp(token, "track.db", true)
+	a, err := app.NewApp(token, "track.db", true)
 	if err != nil {
 		log.Fatal(err)
 	}
