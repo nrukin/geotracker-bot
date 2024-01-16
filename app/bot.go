@@ -81,12 +81,3 @@ func (app *App) SendTrackInfo(info TrackInfo, msg *tgbotapi.Message, t Track) er
 	}
 	return nil
 }
-
-func TrackInfoReplyMarkup(t Track) *tgbotapi.InlineKeyboardMarkup {
-	markup := tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("📥", t.ID),
-		),
-	)
-	return &markup
-}
