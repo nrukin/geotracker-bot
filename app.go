@@ -13,7 +13,9 @@ import (
 
 type Track struct {
 	gorm.Model
-	ID string
+	ID        string
+	ChatID    int64
+	MessageID int
 }
 
 type Location struct {
@@ -106,6 +108,10 @@ func (app *App) Start() {
 
 		switch {
 
+		case update.CallbackQuery != nil:
+			log.Println("Callback Data:", update.CallbackQuery.Data)
+			continue
+			// draft := tgbotapi.NewMessage(msg.Chat.ID, mt)
 		case update.Message != nil:
 			msg = update.Message
 		case update.EditedMessage != nil:
@@ -146,8 +152,14 @@ func (app *App) getLocationFromMessage(msg *tgbotapi.Message) (Location, error) 
 }
 
 func getTrackIDFromMessage(msg *tgbotapi.Message) Track {
+
 	tid := fmt.Sprintf("%d_%d", msg.Chat.ID, msg.MessageID)
-	return Track{ID: tid}
+
+	return Track{
+		ID:        tid,
+		ChatID:    msg.Chat.ID,
+		MessageID: msg.MessageID,
+	}
 }
 
 func (app *App) getTrackInfo(t Track) TrackInfo {
@@ -180,6 +192,7 @@ func (app *App) getTrackInfo(t Track) TrackInfo {
 }
 
 func (app *App) SendTrackInfo(info TrackInfo, msg *tgbotapi.Message, t Track) error {
+
 	var tim TrackInfoMessage
 	mt := info.MessageText()
 	err := app.db.First(&tim, "track_id = ?", t.ID).Error
@@ -187,6 +200,7 @@ func (app *App) SendTrackInfo(info TrackInfo, msg *tgbotapi.Message, t Track) er
 		if err == gorm.ErrRecordNotFound {
 			draft := tgbotapi.NewMessage(msg.Chat.ID, mt)
 			draft.ReplyToMessageID = msg.MessageID
+			draft.ReplyMarkup = TrackInfoReplyMarkup(t)
 			smsg, err := app.bot.Send(draft)
 			if err != nil {
 				return err
@@ -204,8 +218,19 @@ func (app *App) SendTrackInfo(info TrackInfo, msg *tgbotapi.Message, t Track) er
 		tim.MessageID,
 		mt,
 	)
+
+	draft.ReplyMarkup = TrackInfoReplyMarkup(t)
 	if _, err := app.bot.Send(draft); err != nil {
 		return err
 	}
 	return nil
+}
+
+func TrackInfoReplyMarkup(t Track) *tgbotapi.InlineKeyboardMarkup {
+	markup := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("📥", t.ID),
+		),
+	)
+	return &markup
 }
