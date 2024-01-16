@@ -53,8 +53,12 @@ func (app *App) ProcessInlineButtonData(data string) error {
 		if err := app.db.First(&t, "id = ?", d.Data).Error; err != nil {
 			return err
 		}
+		zzz, err := GetTrackGPX(t)
+		if err != nil {
+			return err
+		}
 		if _, err := app.bot.Send(
-			tgbotapi.NewMessage(t.ChatID, "Not implemented yet"),
+			tgbotapi.NewMessage(t.ChatID, string(zzz)),
 		); err != nil {
 			return err
 		}
