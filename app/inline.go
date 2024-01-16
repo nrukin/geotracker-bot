@@ -50,7 +50,7 @@ func (app *App) ProcessInlineButtonData(data string) error {
 	if d.Operation == "download" {
 
 		var t Track
-		if err := app.db.First(&t, d.Data).Error; err != nil {
+		if err := app.db.First(&t, "id = ?", d.Data).Error; err != nil {
 			return err
 		}
 		if _, err := app.bot.Send(
