@@ -32,11 +32,11 @@ type TrackInfo struct {
 	Points   int
 }
 
-type TrackInfoMessages struct {
+type TrackInfoMessage struct {
 	gorm.Model
-	TrackID   string
+	TrackID   string `gorm:"primaryKey"`
 	Track     Track
-	ChatID    int
+	ChatID    int64
 	MessageID int
 }
 
@@ -45,8 +45,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	db.AutoMigrate(&Location{})
 	db.AutoMigrate(&Track{})
+	db.AutoMigrate(&TrackInfoMessage{})
+
 	if len(os.Args) < 2 {
 		log.Fatal("token not set")
 	}
@@ -87,11 +90,50 @@ func main() {
 
 		info := getTrackInfo(loc.Track, db)
 
-		rsp := tgbotapi.NewMessage(msg.Chat.ID, fmt.Sprintf("%+v", info))
-		rsp.ReplyToMessageID = msg.MessageID
-		if _, err := bot.Send(rsp); err != nil {
-			log.Print(err)
+		var tim TrackInfoMessage
+		if err := db.First(&tim, "track_id = ?", loc.Track.ID).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+
+				rsp := tgbotapi.NewMessage(msg.Chat.ID, fmt.Sprintf("%+v", info))
+				rsp.ReplyToMessageID = msg.MessageID
+				zzz, err := bot.Send(rsp)
+
+				if err != nil {
+					log.Print(err)
+					continue
+				}
+
+				tim.Track = loc.Track
+				tim.ChatID = zzz.Chat.ID
+				tim.MessageID = zzz.MessageID
+
+				db.Create(&tim)
+
+			} else {
+				log.Print(err)
+				continue
+			}
+		} else {
+			em := tgbotapi.NewEditMessageText(
+				tim.ChatID,
+				tim.MessageID,
+				fmt.Sprintf("%+v", info),
+			)
+			_, err := bot.Send(em)
+			if err != nil {
+				log.Print(err)
+				continue
+			}
 		}
+
+		//
+
+		// rsp.ReplyToMessageID = msg.MessageID
+		// if _, err := bot.Send(rsp); err != nil {
+		// 	log.Print(err)
+		// }
+
+		// // tgbotapi.NewEditMessageText()
 
 	}
 }
@@ -152,6 +194,8 @@ func getTrackInfo(t Track, db *gorm.DB) TrackInfo {
 		)
 
 	}
+
+	pts = len(locs)
 
 	return TrackInfo{
 		Distance: dst,
