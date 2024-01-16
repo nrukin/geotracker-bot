@@ -32,12 +32,35 @@ type TrackInfo struct {
 }
 
 func (ti TrackInfo) MessageText() string {
+
+	var dist string
+
+	if ti.Distance > 1 {
+		dist = fmt.Sprintf("%.3f km", ti.Distance)
+	} else {
+		dist = fmt.Sprintf("%d m", int(ti.Distance*1000))
+	}
+
 	return fmt.Sprintf(
-		"Distance: %f;\nDuration: %d;\nPointsCnt: %d",
-		ti.Distance,
-		ti.Duration,
+		"🛣: %s\n🕒: %s\n🧮: %d",
+		dist,
+		ti.DurationText(),
 		ti.Points,
 	)
+}
+
+func (ti TrackInfo) DurationText() string {
+
+	var h, m, s int
+	s = ti.Duration
+
+	h = int(s / 3600)
+	s = s - h*3600
+
+	m = int(s / 60)
+	s = s - m*60
+
+	return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
 }
 
 type TrackInfoMessage struct {
