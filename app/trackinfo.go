@@ -16,10 +16,10 @@ func (ti TrackInfo) MessageText() string {
 
 	var dist string
 
-	if ti.Distance > 1 {
-		dist = fmt.Sprintf("%.3f km", ti.Distance)
+	if ti.Distance > 1000 {
+		dist = fmt.Sprintf("%.3f km", ti.Distance/1000)
 	} else {
-		dist = fmt.Sprintf("%d m", int(ti.Distance*1000))
+		dist = fmt.Sprintf("%d m", int(ti.Distance))
 	}
 
 	return fmt.Sprintf(
