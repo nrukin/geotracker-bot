@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 
-	"github.com/asmarques/geodist"
+	"github.com/tkrajina/gpxgo/gpx"
 )
 
 type TrackInfo struct {
@@ -51,18 +51,10 @@ func (app *App) getTrackInfo(t Track) TrackInfo {
 	app.db.Where(&Location{TrackID: t.ID}).Order("Timestamp").Find(&locs)
 	dur = locs[len(locs)-1].Timestamp - locs[0].Timestamp
 	for i := 0; i < len(locs)-1; i++ {
-		cur_point := geodist.Point{
-			Lat:  locs[i].Latitude,
-			Long: locs[i].Longitude,
-		}
-		next_point := geodist.Point{
-			Lat:  locs[i+1].Latitude,
-			Long: locs[i+1].Longitude,
-		}
-		// in kilometers
-		dst += geodist.HaversineDistance(
-			cur_point,
-			next_point,
+		dst += gpx.Distance2D(
+			locs[i].Latitude, locs[i].Longitude,
+			locs[i+1].Latitude, locs[i+1].Longitude,
+			true,
 		)
 	}
 	return TrackInfo{
