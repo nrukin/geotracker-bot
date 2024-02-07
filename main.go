@@ -7,9 +7,12 @@ import (
 	"os"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 type Location struct {
+	gorm.Model
 	Track     string
 	Latitude  float64
 	Longitude float64
@@ -17,6 +20,7 @@ type Location struct {
 }
 
 func main() {
+
 	if len(os.Args) < 2 {
 		log.Fatal("token not set")
 	}
@@ -28,6 +32,14 @@ func main() {
 	log.Printf("Authorised on account %s", bot.Self.UserName)
 
 	bot.Debug = true
+
+	dbFilename := "track.db"
+	db, err := gorm.Open(sqlite.Open(dbFilename), &gorm.Config{})
+	if err != nil {
+		log.Panic(err)
+	}
+
+	db.AutoMigrate(&Location{})
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
