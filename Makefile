@@ -7,3 +7,6 @@ build:
 
 run: build
 	./${BINARY_NAME}
+
+vet:
+	go vet
