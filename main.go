@@ -65,6 +65,7 @@ func main() {
 			continue
 		}
 		log.Printf("%+v", loc)
+		db.Create(&loc)
 
 	}
 }
