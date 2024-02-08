@@ -9,7 +9,13 @@ require (
 )
 
 require (
+	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
+	golang.org/x/text v0.3.6 // indirect
+)
+
+require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/mattn/go-sqlite3 v1.14.17 // indirect
+	github.com/tkrajina/gpxgo v1.3.1
 )

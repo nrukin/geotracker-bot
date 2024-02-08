@@ -7,6 +7,7 @@ import (
 	"os"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/tkrajina/gpxgo/gpx"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -17,6 +18,11 @@ type Location struct {
 	Latitude  float64
 	Longitude float64
 	Timestamp int
+}
+
+type TrackInfo struct {
+	Distance float64
+	Duration int
 }
 
 func main() {
@@ -66,6 +72,14 @@ func main() {
 		}
 		log.Printf("%+v", loc)
 		db.Create(&loc)
+		info := getTrackInfo(db, loc.Track)
+
+		draft := tgbotapi.NewMessage(
+			msg.Chat.ID,
+			info.Message(),
+		)
+		draft.ReplyToMessageID = msg.MessageID
+		bot.Send(draft)
 
 	}
 }
@@ -95,4 +109,36 @@ func getLocationFromMessage(msg *tgbotapi.Message) (Location, error) {
 
 func getTrackFromMessage(msg *tgbotapi.Message) string {
 	return fmt.Sprintf("%d_%d", msg.Chat.ID, msg.MessageID)
+}
+
+func (info TrackInfo) Message() string {
+	return ""
+}
+
+func getTrackInfo(db *gorm.DB, track string) TrackInfo {
+
+	var distance float64
+	var duration int
+	var locations []Location
+
+	db.Where(&Location{Track: track}).Order("Timestamp").Find(&locations)
+	duration = locations[len(locations)-1].Timestamp - locations[0].Timestamp
+
+	for i := 0; i < len(locations)-1; i++ {
+
+		cur := locations[i]
+		next := locations[i+1]
+
+		distance += gpx.Distance2D(
+			cur.Latitude, cur.Longitude,
+			next.Latitude, next.Longitude,
+			true,
+		)
+	}
+
+	return TrackInfo{
+		Distance: distance,
+		Duration: duration,
+	}
+
 }
