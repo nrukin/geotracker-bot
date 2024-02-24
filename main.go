@@ -25,6 +25,11 @@ type TrackInfo struct {
 	Duration int
 }
 
+type TrackInfoResponce struct {
+	gorm.Model
+	Track string
+}
+
 func main() {
 
 	if len(os.Args) < 2 {
