@@ -25,10 +25,13 @@ type TrackInfo struct {
 	Duration int
 }
 
-type TrackInfoResponce struct {
+type TrackInfoMessage struct {
 	gorm.Model
-	Track string
+	Track     string `gorm:"PrimaryKey"`
+	MessageID int
 }
+
+var ErrTrackInfoMsgNotFound = errors.New("Track info msg not found")
 
 func main() {
 
@@ -51,6 +54,7 @@ func main() {
 	}
 
 	db.AutoMigrate(&Location{})
+	db.AutoMigrate(&TrackInfoMessage{})
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -75,17 +79,14 @@ func main() {
 			log.Print(err)
 			continue
 		}
-		log.Printf("%+v", loc)
 		db.Create(&loc)
-		info := getTrackInfo(db, loc.Track)
-
-		draft := tgbotapi.NewMessage(
+		SendTrackInfo(
+			bot,
+			db,
+			loc.Track,
+			getTrackInfo(db, loc.Track),
 			msg.Chat.ID,
-			info.Message(),
 		)
-		draft.ReplyToMessageID = msg.MessageID
-		bot.Send(draft)
-
 	}
 }
 
@@ -145,6 +146,34 @@ func (info TrackInfo) DurationText() string {
 	s = s - m*60
 
 	return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
+}
+
+func SendTrackInfo(bot *tgbotapi.BotAPI, db *gorm.DB, track string, info TrackInfo, chatID int64) error {
+
+	var tim TrackInfoMessage
+
+	if result := db.First(&tim, "track = ?", track); result.Error == gorm.ErrRecordNotFound {
+		msg, err := bot.Send(tgbotapi.NewMessage(
+			chatID,
+			info.Message(),
+		))
+		if err != nil {
+			return err
+		}
+		db.Create(&TrackInfoMessage{
+			Track:     track,
+			MessageID: msg.MessageID,
+		})
+	} else {
+		if _, err := bot.Send(tgbotapi.NewEditMessageText(
+			chatID,
+			tim.MessageID,
+			info.Message(),
+		)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func getTrackInfo(db *gorm.DB, track string) TrackInfo {
