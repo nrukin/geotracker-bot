@@ -112,7 +112,34 @@ func getTrackFromMessage(msg *tgbotapi.Message) string {
 }
 
 func (info TrackInfo) Message() string {
-	return ""
+
+	var dist string
+
+	if info.Distance > 1000 {
+		dist = fmt.Sprintf("%.3f km", info.Distance/1000)
+	} else {
+		dist = fmt.Sprintf("%d m", int(info.Distance))
+	}
+
+	return fmt.Sprintf(
+		"🛣: %s\n🕒: %s",
+		dist,
+		info.DurationText(),
+	)
+}
+
+func (info TrackInfo) DurationText() string {
+
+	var h, m, s int
+	s = info.Duration
+
+	h = int(s / 3600)
+	s = s - h*3600
+
+	m = int(s / 60)
+	s = s - m*60
+
+	return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
 }
 
 func getTrackInfo(db *gorm.DB, track string) TrackInfo {
